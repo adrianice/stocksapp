@@ -1,2 +1,0 @@
-# stocksapp
-Origin stocks challenge.
