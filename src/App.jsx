@@ -1,9 +1,10 @@
+import { RouterProvider } from 'react-router-dom'
+import { Router } from './components/Routes.jsx'
+
 function App() {
 
   return (
-    <>
-      <h1>Stocks app</h1>
-    </>
+    <RouterProvider router={Router} />
   )
 }
 
