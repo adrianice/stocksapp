@@ -4,6 +4,10 @@ import { Signin } from './Signin.jsx'
 
 export const Router = createBrowserRouter([
     {
+        path: '/',
+        element: <h1>Home</h1>
+    },
+    {
         path: '/login',
         element: <Login />,
     },

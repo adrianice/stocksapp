@@ -1,7 +1,7 @@
 <?php
     require realpath(__DIR__ . '/../db.php');
 
-    if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    if($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'OPTIONS'){
         //Get the POST data
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
@@ -15,7 +15,7 @@
 
                 //Search if the user already exists
                 $search = $collection -> find(['username' => $data['username']]);
-                $count = $search -> count();
+                $count = count(iterator_to_array($search));
 
                 //If username does not exists
                 if($count <= 0) {
@@ -28,17 +28,17 @@
 
                     //Insert user on collection
                     $collection -> insertOne($newUser);
-                    http_response_code(200);
+                    http_response_code(201);
                     echo json_encode(['message' => 'User correctly registered']);
                 }
                 else {
-                    http_response_code(400);
+                    http_response_code(202);
                     echo json_encode(['error' => 'User already exists']);
                 }
 
             }
             else {
-                http_response_code(400);
+                http_response_code(202);
                 echo json_encode(['error' => 'Some data is missing']);
             }
         }
