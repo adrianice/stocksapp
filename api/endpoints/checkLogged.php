@@ -1,12 +1,29 @@
 <?php
-    session_start();
+    require 'jwt/verifyToken.php';
 
-    if(isset($_SESSION['user_username'])) {
-        http_response_code(200);
-        echo json_encode(['message' => 'User logged in', 'status' => true, 'user' => ['id' => $_SESSION['id'], 'username' => $_SESSION['username']]]);
+    if($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'OPTIONS'){
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        if(isset($data['token'])) {
+
+            $token = $data['token'];
+            if(verifyToken($token)) {
+                http_response_code(200);
+                echo json_encode(['logged' => true]);
+            }
+            else {
+                http_response_code(200);
+                echo json_encode(['logged' => false]);
+            }
+        }
+        else {
+            http_response_code(203);
+            echo json_encode(['error' => 'Token not provided']);
+        }
     }
     else {
-        http_response_code(200);
-        echo json_encode(['message' => 'User not logged in', 'status' => false]);
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
     }
 ?>

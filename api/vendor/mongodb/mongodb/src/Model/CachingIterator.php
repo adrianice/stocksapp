@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,6 @@ use Traversable;
 
 use function count;
 use function current;
-use function key;
 use function next;
 use function reset;
 
@@ -40,6 +39,9 @@ use function reset;
  */
 class CachingIterator implements Countable, Iterator
 {
+    private const FIELD_KEY = 0;
+    private const FIELD_VALUE = 1;
+
     /** @var array */
     private $items = [];
 
@@ -68,12 +70,8 @@ class CachingIterator implements Countable, Iterator
         $this->storeCurrentItem();
     }
 
-    /**
-     * @see http://php.net/countable.count
-     * @return integer
-     */
-    #[ReturnTypeWillChange]
-    public function count()
+    /** @see https://php.net/countable.count */
+    public function count(): int
     {
         $this->exhaustIterator();
 
@@ -81,31 +79,31 @@ class CachingIterator implements Countable, Iterator
     }
 
     /**
-     * @see http://php.net/iterator.current
+     * @see https://php.net/iterator.current
      * @return mixed
      */
     #[ReturnTypeWillChange]
     public function current()
     {
-        return current($this->items);
+        $currentItem = current($this->items);
+
+        return $currentItem !== false ? $currentItem[self::FIELD_VALUE] : false;
     }
 
     /**
-     * @see http://php.net/iterator.key
+     * @see https://php.net/iterator.key
      * @return mixed
      */
     #[ReturnTypeWillChange]
     public function key()
     {
-        return key($this->items);
+        $currentItem = current($this->items);
+
+        return $currentItem !== false ? $currentItem[self::FIELD_KEY] : null;
     }
 
-    /**
-     * @see http://php.net/iterator.next
-     * @return void
-     */
-    #[ReturnTypeWillChange]
-    public function next()
+    /** @see https://php.net/iterator.next */
+    public function next(): void
     {
         if (! $this->iteratorExhausted) {
             $this->iteratorAdvanced = true;
@@ -119,12 +117,8 @@ class CachingIterator implements Countable, Iterator
         next($this->items);
     }
 
-    /**
-     * @see http://php.net/iterator.rewind
-     * @return void
-     */
-    #[ReturnTypeWillChange]
-    public function rewind()
+    /** @see https://php.net/iterator.rewind */
+    public function rewind(): void
     {
         /* If the iterator has advanced, exhaust it now so that future iteration
          * can rely on the cache.
@@ -136,12 +130,8 @@ class CachingIterator implements Countable, Iterator
         reset($this->items);
     }
 
-    /**
-     * @see http://php.net/iterator.valid
-     * @return boolean
-     */
-    #[ReturnTypeWillChange]
-    public function valid()
+    /** @see https://php.net/iterator.valid */
+    public function valid(): bool
     {
         return $this->key() !== null;
     }
@@ -149,7 +139,7 @@ class CachingIterator implements Countable, Iterator
     /**
      * Ensures that the inner iterator is fully consumed and cached.
      */
-    private function exhaustIterator()
+    private function exhaustIterator(): void
     {
         while (! $this->iteratorExhausted) {
             $this->next();
@@ -159,12 +149,16 @@ class CachingIterator implements Countable, Iterator
     /**
      * Stores the current item in the cache.
      */
-    private function storeCurrentItem()
+    private function storeCurrentItem(): void
     {
         if (! $this->iterator->valid()) {
             return;
         }
 
-        $this->items[$this->iterator->key()] = $this->iterator->current();
+        // Storing a new item in the internal cache
+        $this->items[] = [
+            self::FIELD_KEY => $this->iterator->key(),
+            self::FIELD_VALUE => $this->iterator->current(),
+        ];
     }
 }

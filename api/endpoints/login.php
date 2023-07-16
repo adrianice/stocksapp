@@ -1,12 +1,12 @@
 <?php
     require realpath(__DIR__ . '/../db.php');
-    session_start();
+    require 'jwt/createToken.php';
 
-    if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    if($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'OPTIONS'){
         //Get the POST data
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
-
+        
         //If there is data
         if($data !== null){
             //If all fields were sent
@@ -15,40 +15,36 @@
                 $collection = $db -> selectCollection('users');
 
                 //Search if the user already exists
-                $search = $collection -> find(['username' => $data['username']]);
-                $count = $search -> count();
+                $search = $collection -> findOne(['username' => $data['username']]);
 
                 //If username exists
-                if($count > 0) {
-                    $user = $search -> toArray()[0];
+                if(isset($search)) {
+                    $user = $search -> jsonSerialize();
 
-                    if(password_verify($data['password'], $user['password'])){
-                        //Store session
-                        $_SESSION['user_username'] = $user['username'];
-                        $_SESSION['user_name'] = $user['name'];
-                        $_SESSION['user_id'] = $user['_id'];
+                    if(password_verify($data['password'], $user -> password)){
+                        $token = createToken($user -> _id, $user -> username, $user -> name);
 
                         http_response_code(200);
-                        echo json_encode(['message' => 'Succesfully logged in']);
+                        echo json_encode(['message' => 'Succesfully logged in', 'token' => $token]);
                     }
                     else {
-                        http_response_code(401);
+                        http_response_code(201);
                         echo json_encode(['error' => 'Invalid credentials']);
                     }
                 }
                 else {
-                    http_response_code(401);
+                    http_response_code(201);
                     echo json_encode(['error' => 'Invalid credentials']);
                 }
 
             }
             else {
-                http_response_code(400);
+                http_response_code(201);
                 echo json_encode(['error' => 'Some data is missing']);
             }
         }
         else {
-            http_response_code(400);
+            http_response_code(202);
             echo json_encode(['error' => 'No data received']);
         }
     }

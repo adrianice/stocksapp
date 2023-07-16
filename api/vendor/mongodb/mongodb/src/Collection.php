@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,6 +40,7 @@ use MongoDB\Operation\DeleteMany;
 use MongoDB\Operation\DeleteOne;
 use MongoDB\Operation\Distinct;
 use MongoDB\Operation\DropCollection;
+use MongoDB\Operation\DropEncryptedCollection;
 use MongoDB\Operation\DropIndexes;
 use MongoDB\Operation\EstimatedDocumentCount;
 use MongoDB\Operation\Explain;
@@ -68,15 +69,13 @@ use function strlen;
 
 class Collection
 {
-    /** @var array */
-    private static $defaultTypeMap = [
+    private const DEFAULT_TYPE_MAP = [
         'array' => BSONArray::class,
         'document' => BSONDocument::class,
         'root' => BSONDocument::class,
     ];
 
-    /** @var integer */
-    private static $wireVersionForReadConcernWithWriteStage = 8;
+    private const WIRE_VERSION_FOR_READ_CONCERN_WITH_WRITE_STAGE = 8;
 
     /** @var string */
     private $collectionName;
@@ -126,13 +125,13 @@ class Collection
      * @param array   $options        Collection options
      * @throws InvalidArgumentException for parameter/option parsing errors
      */
-    public function __construct(Manager $manager, $databaseName, $collectionName, array $options = [])
+    public function __construct(Manager $manager, string $databaseName, string $collectionName, array $options = [])
     {
-        if (strlen((string) $databaseName) < 1) {
+        if (strlen($databaseName) < 1) {
             throw new InvalidArgumentException('$databaseName is invalid: ' . $databaseName);
         }
 
-        if (strlen((string) $collectionName) < 1) {
+        if (strlen($collectionName) < 1) {
             throw new InvalidArgumentException('$collectionName is invalid: ' . $collectionName);
         }
 
@@ -153,18 +152,18 @@ class Collection
         }
 
         $this->manager = $manager;
-        $this->databaseName = (string) $databaseName;
-        $this->collectionName = (string) $collectionName;
+        $this->databaseName = $databaseName;
+        $this->collectionName = $collectionName;
         $this->readConcern = $options['readConcern'] ?? $this->manager->getReadConcern();
         $this->readPreference = $options['readPreference'] ?? $this->manager->getReadPreference();
-        $this->typeMap = $options['typeMap'] ?? self::$defaultTypeMap;
+        $this->typeMap = $options['typeMap'] ?? self::DEFAULT_TYPE_MAP;
         $this->writeConcern = $options['writeConcern'] ?? $this->manager->getWriteConcern();
     }
 
     /**
      * Return internal properties for debugging purposes.
      *
-     * @see http://php.net/manual/en/language.oop5.magic.php#language.oop5.magic.debuginfo
+     * @see https://php.net/manual/en/language.oop5.magic.php#language.oop5.magic.debuginfo
      * @return array
      */
     public function __debugInfo()
@@ -183,7 +182,7 @@ class Collection
     /**
      * Return the collection namespace (e.g. "db.collection").
      *
-     * @see https://docs.mongodb.org/manual/faq/developers/#faq-dev-namespace
+     * @see https://mongodb.com/docs/manual/core/databases-and-collections/
      * @return string
      */
     public function __toString()
@@ -200,7 +199,7 @@ class Collection
      * "result" array from the command response document.
      *
      * @see Aggregate::__construct() for supported options
-     * @param array $pipeline List of pipeline operations
+     * @param array $pipeline Aggregation pipeline
      * @param array $options  Command options
      * @return Traversable
      * @throws UnexpectedValueException if the command response was malformed
@@ -228,7 +227,7 @@ class Collection
         if (
             ! isset($options['readConcern']) &&
             ! is_in_transaction($options) &&
-            ( ! $hasWriteStage || server_supports_feature($server, self::$wireVersionForReadConcernWithWriteStage))
+            ( ! $hasWriteStage || server_supports_feature($server, self::WIRE_VERSION_FOR_READ_CONCERN_WITH_WRITE_STAGE))
         ) {
             $options['readConcern'] = $this->readConcern;
         }
@@ -368,8 +367,8 @@ class Collection
      * If the "name" option is unspecified, a name will be generated from the
      * "key" document.
      *
-     * @see http://docs.mongodb.org/manual/reference/command/createIndexes/
-     * @see http://docs.mongodb.org/manual/reference/method/db.collection.createIndex/
+     * @see https://mongodb.com/docs/manual/reference/command/createIndexes/
+     * @see https://mongodb.com/docs/manual/reference/method/db.collection.createIndex/
      * @see CreateIndexes::__construct() for supported command options
      * @param array[] $indexes List of index specifications
      * @param array   $options Command options
@@ -395,7 +394,7 @@ class Collection
      * Deletes all documents matching the filter.
      *
      * @see DeleteMany::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/delete/
+     * @see https://mongodb.com/docs/manual/reference/command/delete/
      * @param array|object $filter  Query by which to delete documents
      * @param array        $options Command options
      * @return DeleteResult
@@ -419,7 +418,7 @@ class Collection
      * Deletes at most one document matching the filter.
      *
      * @see DeleteOne::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/delete/
+     * @see https://mongodb.com/docs/manual/reference/command/delete/
      * @param array|object $filter  Query by which to delete documents
      * @param array        $options Command options
      * @return DeleteResult
@@ -446,13 +445,13 @@ class Collection
      * @param string       $fieldName Field for which to return distinct values
      * @param array|object $filter    Query by which to filter documents
      * @param array        $options   Command options
-     * @return mixed[]
+     * @return array
      * @throws UnexpectedValueException if the command response was malformed
      * @throws UnsupportedException if options are not supported by the selected server
      * @throws InvalidArgumentException for parameter/option parsing errors
      * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
      */
-    public function distinct($fieldName, $filter = [], array $options = [])
+    public function distinct(string $fieldName, $filter = [], array $options = [])
     {
         if (! isset($options['readPreference']) && ! is_in_transaction($options)) {
             $options['readPreference'] = $this->readPreference;
@@ -495,7 +494,14 @@ class Collection
             $options['writeConcern'] = $this->writeConcern;
         }
 
-        $operation = new DropCollection($this->databaseName, $this->collectionName, $options);
+        if (! isset($options['encryptedFields'])) {
+            $options['encryptedFields'] = get_encrypted_fields_from_driver($this->databaseName, $this->collectionName, $this->manager)
+                ?? get_encrypted_fields_from_server($this->databaseName, $this->collectionName, $this->manager, $server);
+        }
+
+        $operation = isset($options['encryptedFields'])
+            ? new DropEncryptedCollection($this->databaseName, $this->collectionName, $options)
+            : new DropCollection($this->databaseName, $this->collectionName, $options);
 
         return $operation->execute($server);
     }
@@ -593,7 +599,7 @@ class Collection
      * Explains explainable commands.
      *
      * @see Explain::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/explain/
+     * @see https://mongodb.com/docs/manual/reference/command/explain/
      * @param Explainable $explainable Command on which to run explain
      * @param array       $options     Additional options
      * @return array|object
@@ -622,7 +628,7 @@ class Collection
      * Finds documents matching the query.
      *
      * @see Find::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/core/read-operations-introduction/
+     * @see https://mongodb.com/docs/manual/crud/#read-operations
      * @param array|object $filter  Query by which to filter documents
      * @param array        $options Additional options
      * @return Cursor
@@ -655,7 +661,7 @@ class Collection
      * Finds a single document matching the query.
      *
      * @see FindOne::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/core/read-operations-introduction/
+     * @see https://mongodb.com/docs/manual/crud/#read-operations
      * @param array|object $filter  Query by which to filter documents
      * @param array        $options Additional options
      * @return array|object|null
@@ -690,7 +696,7 @@ class Collection
      * The document to return may be null if no document matched the filter.
      *
      * @see FindOneAndDelete::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/findAndModify/
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
      * @param array|object $filter  Query by which to filter documents
      * @param array        $options Command options
      * @return array|object|null
@@ -726,7 +732,7 @@ class Collection
      * to return the updated document.
      *
      * @see FindOneAndReplace::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/findAndModify/
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
      * @param array|object $filter      Query by which to filter documents
      * @param array|object $replacement Replacement document
      * @param array        $options     Command options
@@ -763,7 +769,7 @@ class Collection
      * to return the updated document.
      *
      * @see FindOneAndReplace::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/findAndModify/
+     * @see https://mongodb.com/docs/manual/reference/command/findAndModify/
      * @param array|object $filter  Query by which to filter documents
      * @param array|object $update  Update to apply to the matched document
      * @param array        $options Command options
@@ -823,7 +829,7 @@ class Collection
     /**
      * Return the collection namespace.
      *
-     * @see https://docs.mongodb.org/manual/reference/glossary/#term-namespace
+     * @see https://mongodb.com/docs/manual/reference/glossary/#term-namespace
      * @return string
      */
     public function getNamespace()
@@ -834,7 +840,7 @@ class Collection
     /**
      * Return the read concern for this collection.
      *
-     * @see http://php.net/manual/en/mongodb-driver-readconcern.isdefault.php
+     * @see https://php.net/manual/en/mongodb-driver-readconcern.isdefault.php
      * @return ReadConcern
      */
     public function getReadConcern()
@@ -865,7 +871,7 @@ class Collection
     /**
      * Return the write concern for this collection.
      *
-     * @see http://php.net/manual/en/mongodb-driver-writeconcern.isdefault.php
+     * @see https://php.net/manual/en/mongodb-driver-writeconcern.isdefault.php
      * @return WriteConcern
      */
     public function getWriteConcern()
@@ -877,7 +883,7 @@ class Collection
      * Inserts multiple documents.
      *
      * @see InsertMany::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/insert/
+     * @see https://mongodb.com/docs/manual/reference/command/insert/
      * @param array[]|object[] $documents The documents to insert
      * @param array            $options   Command options
      * @return InsertManyResult
@@ -900,7 +906,7 @@ class Collection
      * Inserts one document.
      *
      * @see InsertOne::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/insert/
+     * @see https://mongodb.com/docs/manual/reference/command/insert/
      * @param array|object $document The document to insert
      * @param array        $options  Command options
      * @return InsertOneResult
@@ -923,7 +929,6 @@ class Collection
      * Returns information for all indexes for the collection.
      *
      * @see ListIndexes::__construct() for supported options
-     * @param array $options
      * @return IndexInfoIterator
      * @throws InvalidArgumentException for parameter/option parsing errors
      * @throws DriverRuntimeException for other driver errors (e.g. connection errors)
@@ -940,7 +945,7 @@ class Collection
      * Executes a map-reduce aggregation on the collection.
      *
      * @see MapReduce::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/mapReduce/
+     * @see https://mongodb.com/docs/manual/reference/command/mapReduce/
      * @param JavascriptInterface $map     Map function
      * @param JavascriptInterface $reduce  Reduce function
      * @param string|array|object $out     Output specification
@@ -961,7 +966,7 @@ class Collection
 
         // Check if the out option is inline because we will want to coerce a primary read preference if not
         if ($hasOutputCollection) {
-            $options['readPreference'] = new ReadPreference(ReadPreference::RP_PRIMARY);
+            $options['readPreference'] = new ReadPreference(ReadPreference::PRIMARY);
         }
 
         $server = select_server($this->manager, $options);
@@ -992,9 +997,9 @@ class Collection
      * Renames the collection.
      *
      * @see RenameCollection::__construct() for supported options
-     * @param string  $toCollectionName New name of the collection
-     * @param ?string $toDatabaseName   New database name of the collection. Defaults to the original database.
-     * @param array   $options          Additional options
+     * @param string      $toCollectionName New name of the collection
+     * @param string|null $toDatabaseName   New database name of the collection. Defaults to the original database.
+     * @param array       $options          Additional options
      * @return array|object Command result document
      * @throws UnsupportedException if options are not supported by the selected server
      * @throws InvalidArgumentException for parameter/option parsing errors
@@ -1025,7 +1030,7 @@ class Collection
      * Replaces at most one document matching the filter.
      *
      * @see ReplaceOne::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/update/
+     * @see https://mongodb.com/docs/manual/reference/command/update/
      * @param array|object $filter      Query by which to filter documents
      * @param array|object $replacement Replacement document
      * @param array        $options     Command options
@@ -1050,7 +1055,7 @@ class Collection
      * Updates all documents matching the filter.
      *
      * @see UpdateMany::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/update/
+     * @see https://mongodb.com/docs/manual/reference/command/update/
      * @param array|object $filter  Query by which to filter documents
      * @param array|object $update  Update to apply to the matched documents
      * @param array        $options Command options
@@ -1075,7 +1080,7 @@ class Collection
      * Updates at most one document matching the filter.
      *
      * @see UpdateOne::__construct() for supported options
-     * @see http://docs.mongodb.org/manual/reference/command/update/
+     * @see https://mongodb.com/docs/manual/reference/command/update/
      * @param array|object $filter  Query by which to filter documents
      * @param array|object $update  Update to apply to the matched document
      * @param array        $options Command options
@@ -1100,7 +1105,7 @@ class Collection
      * Create a change stream for watching changes to the collection.
      *
      * @see Watch::__construct() for supported options
-     * @param array $pipeline List of pipeline operations
+     * @param array $pipeline Aggregation pipeline
      * @param array $options  Command options
      * @return ChangeStream
      * @throws InvalidArgumentException for parameter/option parsing errors

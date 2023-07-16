@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,8 +34,7 @@ use function unpack;
  */
 class BSONIterator implements Iterator
 {
-    /** @var integer */
-    private static $bsonSize = 4;
+    private const BSON_SIZE = 4;
 
     /** @var string */
     private $buffer;
@@ -63,12 +62,12 @@ class BSONIterator implements Iterator
      *  * typeMap (array): Type map for BSON deserialization.
      *
      * @internal
-     * @see http://php.net/manual/en/function.mongodb.bson-tophp.php
+     * @see https://php.net/manual/en/function.mongodb.bson-tophp.php
      * @param string $data    Concatenated, valid, BSON-encoded documents
      * @param array  $options Iterator options
      * @throws InvalidArgumentException for parameter/option parsing errors
      */
-    public function __construct($data, array $options = [])
+    public function __construct(string $data, array $options = [])
     {
         if (isset($options['typeMap']) && ! is_array($options['typeMap'])) {
             throw InvalidArgumentException::invalidType('"typeMap" option', $options['typeMap'], 'array');
@@ -84,7 +83,7 @@ class BSONIterator implements Iterator
     }
 
     /**
-     * @see http://php.net/iterator.current
+     * @see https://php.net/iterator.current
      * @return mixed
      */
     #[ReturnTypeWillChange]
@@ -94,7 +93,7 @@ class BSONIterator implements Iterator
     }
 
     /**
-     * @see http://php.net/iterator.key
+     * @see https://php.net/iterator.key
      * @return mixed
      */
     #[ReturnTypeWillChange]
@@ -104,7 +103,7 @@ class BSONIterator implements Iterator
     }
 
     /**
-     * @see http://php.net/iterator.next
+     * @see https://php.net/iterator.next
      * @return void
      */
     #[ReturnTypeWillChange]
@@ -116,7 +115,7 @@ class BSONIterator implements Iterator
     }
 
     /**
-     * @see http://php.net/iterator.rewind
+     * @see https://php.net/iterator.rewind
      * @return void
      */
     #[ReturnTypeWillChange]
@@ -128,27 +127,24 @@ class BSONIterator implements Iterator
         $this->advance();
     }
 
-    /**
-     * @see http://php.net/iterator.valid
-     * @return boolean
-     */
+    /** @see https://php.net/iterator.valid */
     #[ReturnTypeWillChange]
-    public function valid()
+    public function valid(): bool
     {
         return $this->current !== null;
     }
 
-    private function advance()
+    private function advance(): void
     {
         if ($this->position === $this->bufferLength) {
             return;
         }
 
-        if ($this->bufferLength - $this->position < self::$bsonSize) {
-            throw new UnexpectedValueException(sprintf('Expected at least %d bytes; %d remaining', self::$bsonSize, $this->bufferLength - $this->position));
+        if ($this->bufferLength - $this->position < self::BSON_SIZE) {
+            throw new UnexpectedValueException(sprintf('Expected at least %d bytes; %d remaining', self::BSON_SIZE, $this->bufferLength - $this->position));
         }
 
-        [, $documentLength] = unpack('V', substr($this->buffer, $this->position, self::$bsonSize));
+        [, $documentLength] = unpack('V', substr($this->buffer, $this->position, self::BSON_SIZE));
 
         if ($this->bufferLength - $this->position < $documentLength) {
             throw new UnexpectedValueException(sprintf('Expected %d bytes; %d remaining', $documentLength, $this->bufferLength - $this->position));

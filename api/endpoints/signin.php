@@ -43,7 +43,7 @@
             }
         }
         else {
-            http_response_code(400);
+            http_response_code(202);
             echo json_encode(['error' => 'No data received']);
         }
     }
