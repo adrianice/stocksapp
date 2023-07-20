@@ -28,6 +28,15 @@
 
                     //Insert user on collection
                     $collection -> insertOne($newUser);
+                    
+                    //Get the inserted user from db to get _id
+                    $insertedUser = $collection -> findOne(['username' => $data['username']]);
+                    $user = $insertedUser -> jsonSerialize();
+
+                    //Insert user favorite stocks
+                    $collectionFavoriteStocks = $db -> selectCollection('favoriteStocks');
+                    $collectionFavoriteStocks -> insertOne(['userid' => $user -> _id, 'stocks' => []]);
+
                     http_response_code(201);
                     echo json_encode(['message' => 'User correctly registered']);
                 }
