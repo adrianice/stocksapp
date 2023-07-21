@@ -3,6 +3,7 @@ import { Login } from './Login.jsx'
 import { MyStocks } from "./MyStocks.jsx";
 import { ProtectedRoute } from "./ProtectedRoute.jsx";
 import { Signin } from './Signin.jsx'
+import { Stock } from "./Stock.jsx";
 
 export const Router = createBrowserRouter([
     {
@@ -16,5 +17,9 @@ export const Router = createBrowserRouter([
     {
         path: '/signin',
         element: <ProtectedRoute element={Signin} guestOnly={true}/>,
+    },
+    {
+        path: '/stock/:symbol',
+        element: <ProtectedRoute element={Stock} />
     }
 ])
