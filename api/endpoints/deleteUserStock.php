@@ -24,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE' || $_SERVER['REQUEST_METHOD'] === 'O
                         return $stock->symbol !== $symbolToDelete;
                     });
 
+                    $userStocks = array_values($userStocks);
+
                     $result->stocks = $userStocks;
                     $collection->replaceOne(['_id' => $result->_id], $result);
 

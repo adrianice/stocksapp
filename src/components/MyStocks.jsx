@@ -16,6 +16,10 @@ export function MyStocks () {
         setSearch(event.target.value)
     }
 
+    const encodeSymbol = (symbol) => {
+        return symbol.replace(/\./g, "_")
+    }
+
     useEffect(() => {
         getDataListOptions().then((response) => setStocklist(response))
     }, [])
@@ -119,7 +123,7 @@ export function MyStocks () {
                                                 {
                                                     userStocks.stocks.map((stock) => (
                                                         <tr key={stock.name}>
-                                                            <td><Link to={`/stock/${encodeURI(stock.symbol)}`}>{stock.symbol}</Link></td>
+                                                            <td><Link to={`/stock/${encodeSymbol(stock.symbol)}`}>{stock.symbol}</Link></td>
                                                             <td>{stock.name}</td>
                                                             <td>{stock.currency}</td>
                                                             <td><button onClick={() => handleDeleteUserStock(stock.symbol)} className="btn btn-secondary">Delete</button></td>
