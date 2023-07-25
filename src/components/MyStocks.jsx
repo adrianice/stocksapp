@@ -4,6 +4,7 @@ import { getDataListOptions } from "../services/getDataListOptions.js";
 import { insertStock } from "../services/insertStock.js";
 import { getUserStocks } from "../services/getUserStocks.js";
 import { deleteUserStock } from "../services/deleteUserStock.js";
+import { Link } from "react-router-dom";
 
 export function MyStocks () {
     const [search, setSearch] = useState('')
@@ -13,6 +14,10 @@ export function MyStocks () {
 
     const handleChangeStockSearch = (event) => {
         setSearch(event.target.value)
+    }
+
+    const encodeSymbol = (symbol) => {
+        return symbol.replace(/\./g, "_")
     }
 
     useEffect(() => {
@@ -102,7 +107,7 @@ export function MyStocks () {
                         </div>
                         
                         {
-                            userStocks != null
+                            userStocks && userStocks.stocks.length > 0
                             ?
                                 (
                                     <div className="table-responsive my-2">
@@ -118,7 +123,7 @@ export function MyStocks () {
                                                 {
                                                     userStocks.stocks.map((stock) => (
                                                         <tr key={stock.name}>
-                                                            <td><a href={`/stock/${stock.symbol}`}>{stock.symbol}</a></td>
+                                                            <td><Link to={`/stock/${encodeSymbol(stock.symbol)}`}>{stock.symbol}</Link></td>
                                                             <td>{stock.name}</td>
                                                             <td>{stock.currency}</td>
                                                             <td><button onClick={() => handleDeleteUserStock(stock.symbol)} className="btn btn-secondary">Delete</button></td>
