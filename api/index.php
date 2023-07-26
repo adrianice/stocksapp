@@ -12,7 +12,6 @@
     $endpoints = [
         '/api/signin' => 'endpoints/signin.php',
         '/api/login' => 'endpoints/login.php',
-        '/api/logout' => 'endpoints/logout.php',
         '/api/checkLogged' => 'endpoints/checkLogged.php',
         '/api/insertStock' => 'endpoints/insertStock.php',
         '/api/getUserStocks' => 'endpoints/getUserStocks.php',
