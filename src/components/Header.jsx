@@ -1,12 +1,11 @@
 import { logout } from "../services/logout"
-import { checkLogged } from "../services/checkLogged.js"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { HeaderButtons } from "./HeaderButtons"
 import jwt_decode from 'jwt-decode'
 
-export function Header () {
-    const [logged, setLogged] = useState(null)
+export function Header ({log = false}) {
+    const [logged] = useState(log)
     const [username, setUsername] = useState(null)
     const navigate = useNavigate()
 
@@ -16,15 +15,12 @@ export function Header () {
     }
     
     useEffect(() => {
-        checkLogged().then((response) => {
-            setLogged(response)
-            if (response) {
-                const token = localStorage.getItem('token')
-                const decodedToken = jwt_decode(token)
-                const username = decodedToken.username
-                setUsername(username)
-            }
-        })
+        if (logged) {
+            const token = localStorage.getItem('token')
+            const decodedToken = jwt_decode(token)
+            const username = decodedToken.username
+            setUsername(username)
+        }
     }, [])
 
     return (
@@ -32,12 +28,7 @@ export function Header () {
             <div className="container-fluid">
                 <a className="navbar-brand" href="/">MY STOCKS</a>
                 <div className="d-flex">
-                    {
-                        logged !== null
-                        ? <HeaderButtons logged={logged} handleClickLogout={handleClickLogout} username={username}/>
-                        : ''
-                    }
-                    
+                    <HeaderButtons logged={logged} handleClickLogout={handleClickLogout} username={username}/>
                 </div>
             </div>
         </nav>
