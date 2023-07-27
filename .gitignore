@@ -11,8 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
-vendor
-composer.lock
+API/vendor
+API/composer.lock
 
 # Editor directories and files
 .vscode/*
